@@ -10,6 +10,12 @@ from pgmpy.factors.discrete import TabularCPD
 
 from bn_utils import _refit_model, warn_if_bad_cpds
 
+try:
+    from bayesian_evaluation import build_pruning_row_extra
+except ImportError:
+    def build_pruning_row_extra(*args, **kwargs):
+        raise ImportError("bayesian_evaluation.build_pruning_row_extra required")
+
 
 def _cpd_shape(cpd: TabularCPD, state_names_override: dict = None):
     """
@@ -256,36 +262,11 @@ def structural_error_pruning(
     )
 
     def _row_extra(true_m, learned_m, step_edges=None):
-        row = {
-            "ll_score": ll_fn(learned_m, evaluate_data),
-            "kl_score": 0.0 if (step_edges is not None and step_edges == 0) else kl_fn(true_m, learned_m),
-            "structure_score": struct_fn(true_m, learned_m),
-        }
-        if target_var and pred_fn and target_var in learned_m.nodes():
-            row["pred_accuracy"] = pred_fn(learned_m, evaluate_data, target_var)
-        else:
-            row["pred_accuracy"] = None
-        if collider_fn:
-            coll = collider_fn(true_m, learned_m)
-            row["collider_recall"] = coll["recall"]
-            row["collider_precision"] = coll["precision"]
-        else:
-            row["collider_recall"] = None
-            row["collider_precision"] = None
-        if interventions and do_kl_fn:
-            kls = []
-            for do_dict in interventions:
-                kl = do_kl_fn(true_m, learned_m, do_dict, n_samples=300, verbose=False)
-                if kl is not None and not (isinstance(kl, float) and np.isnan(kl)):
-                    kls.append(kl)
-            row["interventional_kl_mean"] = float(np.mean(kls)) if kls else None
-        else:
-            row["interventional_kl_mean"] = None
-        if ace_fn:
-            row["global_ace_diff"] = ace_fn(true_m, learned_m)
-        else:
-            row["global_ace_diff"] = None
-        return row
+        return build_pruning_row_extra(
+            true_m, learned_m, ll_fn, kl_fn, struct_fn, evaluate_data,
+            step_edges=step_edges, target_var=target_var, pred_fn=pred_fn,
+            collider_fn=collider_fn, interventions=interventions, do_kl_fn=do_kl_fn, ace_fn=ace_fn,
+        )
 
     # Refit both models once
     true_model = _refit_model(

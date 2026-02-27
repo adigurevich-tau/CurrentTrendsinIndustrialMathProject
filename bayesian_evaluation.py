@@ -5,6 +5,7 @@ structural error, predictive quality, and causal quality (interventions, ACE, co
 
 import random
 import itertools
+import copy
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -344,7 +345,6 @@ def evaluate_global_ace_difference(
     learned_model: DiscreteBayesianNetwork,
 ) -> float:
     """Mean absolute difference in ACE over all (X,Y) and state pairs. Aligns state names first."""
-    import copy
     learned_model = align_state_names_from_true(true_model, copy.deepcopy(learned_model))
     ace_diffs = []
     nodes = list(true_model.nodes())
@@ -389,3 +389,55 @@ def evaluate_collider_preservation(
     recall = tp / n_true if n_true else 0.0
     f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
     return {"n_true_colliders": n_true, "n_learned_colliders": n_learned, "precision": precision, "recall": recall, "f1": f1}
+
+
+def build_pruning_row_extra(
+    true_m,
+    learned_m,
+    ll_fn,
+    kl_fn,
+    struct_fn,
+    evaluate_data,
+    step_edges=None,
+    target_var=None,
+    pred_fn=None,
+    collider_fn=None,
+    interventions=None,
+    do_kl_fn=None,
+    ace_fn=None,
+):
+    """
+    Build the extra metrics dict for one pruning step (used by wavelet, score, and CSI).
+    Callers pass the same evaluation callables so ACE and other metrics are in one place.
+    """
+    row = {
+        "ll_score": ll_fn(learned_m, evaluate_data),
+        "kl_score": 0.0 if (step_edges is not None and step_edges == 0) else kl_fn(true_m, learned_m),
+        "structure_score": struct_fn(true_m, learned_m),
+    }
+    if target_var and pred_fn and target_var in learned_m.nodes():
+        row["pred_accuracy"] = pred_fn(learned_m, evaluate_data, target_var)
+    else:
+        row["pred_accuracy"] = None
+    if collider_fn:
+        coll = collider_fn(true_m, learned_m)
+        row["collider_recall"] = coll["recall"]
+        row["collider_precision"] = coll["precision"]
+    else:
+        row["collider_recall"] = None
+        row["collider_precision"] = None
+    if interventions and do_kl_fn:
+        kls = []
+        for do_dict in interventions:
+            kl = do_kl_fn(true_m, learned_m, do_dict, n_samples=300, verbose=False)
+            if kl is not None and not (isinstance(kl, float) and np.isnan(kl)):
+                kls.append(kl)
+        row["interventional_kl_mean"] = float(np.mean(kls)) if kls else None
+    else:
+        row["interventional_kl_mean"] = None
+    if ace_fn:
+        row["global_ace_diff"] = ace_fn(true_m, learned_m)
+    else:
+        row["global_ace_diff"] = None
+    return row
+
