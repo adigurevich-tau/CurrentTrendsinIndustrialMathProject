@@ -34,7 +34,7 @@ if SCRIPT_DIR not in sys.path:
 
 import bayesian_evaluation as ev
 from bn_utils import _refit_model
-from bayesian_wavelet_pruning_fixed import pruning_l2_wavelet
+from bayesian_wavelet_pruning import pruning_l2_wavelet
 from bayesian_score_pruning import score_pruning
 from bayesian_csi_pruning import structural_error_pruning
 from compare_pruning_methods import (
