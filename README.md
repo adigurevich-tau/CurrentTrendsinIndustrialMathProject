@@ -33,7 +33,7 @@ Runtime: several minutes depending on hardware (ALARM has 37 nodes; synthetic si
 | `main.py` | Entry point (run this). |
 | `bayesian_config.json` | **Required for synthetic experiment.** Defines nodes, edges, `variable_card`, and CPDs. Put it in the same directory as `main.py`. If missing, only ALARM runs. |
 | `bayesian_evaluation.py` | Evaluation helpers (log-likelihood, KL, structural error, colliders, interventional KL). |
-| `bayesian_wavelet_pruning_fixed.py` | Wavelet L2 pruning. |
+| `bayesian_wavelet_pruning.py` | Wavelet L2 pruning. |
 | `bayesian_score_pruning.py` | Score-based pruning (BIC, AIC, BDs). |
 | `bayesian_csi_pruning.py` | CSI / structural-error pruning. |
 | `compare_pruning_methods.py` | Comparison table and progress plotting. |
