@@ -5,10 +5,11 @@ Comparison of Bayesian network pruning methods: **Wavelet (L2)**, **BIC**, **AIC
 ## Setup
 
 ```bash
-git clone https://github.com/noaaharonTAU/CurrentTrendsinIndustrialMathProject.git
+git clone https://github.com/adigurevich-tau/CurrentTrendsinIndustrialMathProject.git
 cd CurrentTrendsinIndustrialMathProject
 pip install -r requirements.txt
 ```
+
 
 ## Run everything
 
