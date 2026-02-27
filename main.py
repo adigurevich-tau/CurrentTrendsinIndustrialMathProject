@@ -2,6 +2,7 @@
 Current Trends in Industrial Math Project — main entry point.
 
 Run ALARM and synthetic experiments, then print comparison tables and save progress plots.
+Uses bn_utils for refit, passes evaluate_global_ace_difference to all pruning methods.
 
 Usage (from project root):
   pip install -r requirements.txt
