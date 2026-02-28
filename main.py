@@ -362,8 +362,8 @@ def main():
 
 if __name__ == "__main__":
     run_both = len(sys.argv) > 1 and sys.argv[1].lower() in ("all", "--all", "synthetic")
-    if run_both and os.path.isfile(CONFIG_PATH):
-        main()  # ALARM + synthetic
+    if run_both:
+        main()  # ALARM + synthetic (synthetic skipped if bayesian_config.json missing)
     else:
         # ALARM only
         warnings.filterwarnings("ignore", category=UserWarning, module="pgmpy")
