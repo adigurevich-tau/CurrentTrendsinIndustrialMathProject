@@ -90,7 +90,7 @@ def run_alarm():
 
     max_steps = MAX_STEPS
     ll_fn = ev.evaluate_log_likelihood
-    kl_fn = ev.evaluate_kl_divergence
+    kl_fn = lambda true_m, learned_m: ev.evaluate_kl_divergence(true_m, learned_m, verbose=False)
     struct_fn = ev.evaluate_structural_error
 
     print("\n--- Wavelet pruning ---")
