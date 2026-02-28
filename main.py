@@ -17,7 +17,11 @@ from __future__ import print_function
 import os
 import sys
 import json
+import logging
 import warnings
+
+# Suppress pgmpy INFO/WARNING (e.g. datatype inference, probability sum adjustment)
+logging.getLogger("pgmpy").setLevel(logging.ERROR)
 
 import numpy as np
 import pandas as pd
@@ -42,18 +46,16 @@ from compare_pruning_methods import (
     run_and_print_comparison,
     plot_pruning_progress,
 )
-
-import logging
-logging.getLogger("pgmpy").setLevel(logging.ERROR)
+from run_config import run_config
 
 # -----------------------------------------------------------------------------
-# Config and globals
+# Paths and config (tunables in run_config.json)
 # -----------------------------------------------------------------------------
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "bayesian_config.json")
-MAX_STEPS = 10
-MIN_STEPS = 5
-N_KL = 500
-N_DO = 300
+MAX_STEPS = run_config["pruning"]["max_steps"]
+MIN_STEPS = run_config["pruning"]["min_steps"]
+N_KL = run_config["evaluation"]["n_kl"]
+N_DO = run_config["evaluation"]["n_do"]
 
 
 def _encode_alarm_data_to_int(train_df, evaluate_df):
@@ -75,7 +77,9 @@ def run_alarm():
     print("ALARM MODEL")
     print("=" * 60)
     true_model = get_example_model("alarm")
-    n_data, n_train, n_eval = 4200, 900, 900
+    n_data = run_config["alarm"]["n_data"]
+    n_train = run_config["alarm"]["n_train"]
+    n_eval = run_config["alarm"]["n_eval"]
     data = true_model.simulate(n_samples=n_data, show_progress=False)
     train_data = true_model.simulate(n_samples=n_train, show_progress=False)
     evaluate_data = true_model.simulate(n_samples=n_eval, show_progress=False)
@@ -195,8 +199,11 @@ def load_synthetic_model_and_data(config_path):
     model.add_cpds(*cpds)
     assert model.check_model(), "Synthetic model is invalid"
     sampler = BayesianModelSampling(model)
-    data = sampler.forward_sample(size=4000)
-    train_data, evaluate_data = train_test_split(data, train_size=0.7, random_state=42)
+    size = run_config["synthetic"]["sample_size"]
+    train_ratio = run_config["synthetic"]["train_ratio"]
+    random_state = run_config["synthetic"]["random_state"]
+    data = sampler.forward_sample(size=size)
+    train_data, evaluate_data = train_test_split(data, train_size=train_ratio, random_state=random_state)
     return model, train_data, evaluate_data
 
 
@@ -215,7 +222,7 @@ def run_synthetic():
 
     max_steps = MAX_STEPS
     ll_fn = ev.evaluate_log_likelihood
-    kl_fn = ev.evaluate_kl_divergence
+    kl_fn = lambda true_m, learned_m: ev.evaluate_kl_divergence(true_m, learned_m, verbose=False)
     struct_fn = ev.evaluate_structural_error
 
     print("\n--- Wavelet pruning ---")
@@ -311,19 +318,7 @@ def main_alarm():
     print("\n" + "=" * 60)
     print("ALARM — Comparison table")
     print("=" * 60)
-    run_and_print_comparison(
-        true_model=alarm_results["true_model"],
-        wavelet_model=alarm_results["models"]["Wavelet"],
-        BIC_model=alarm_results["models"]["BIC"],
-        AIC_model=alarm_results["models"]["AIC"],
-        BDs_model=alarm_results["models"]["BDs"],
-        csi_model=alarm_results["models"]["CSI"],
-        data=alarm_results["train_data"],
-        evaluate_data=alarm_results["evaluate_data"],
-        n_kl=N_KL,
-        n_do=N_DO,
-        evaluation_module=ev,
-    )
+    run_and_print_comparison(histories=alarm_results["histories"])
     fig_alarm, _ = plot_pruning_progress(alarm_results["histories"])
     if fig_alarm is not None:
         out_alarm = os.path.join(SCRIPT_DIR, "alarm_progress.png")
@@ -347,19 +342,7 @@ def main_synthetic():
     print("\n" + "=" * 60)
     print("SYNTHETIC — Comparison table")
     print("=" * 60)
-    run_and_print_comparison(
-        true_model=synthetic_results["true_model"],
-        wavelet_model=synthetic_results["models"]["Wavelet"],
-        BIC_model=synthetic_results["models"]["BIC"],
-        AIC_model=synthetic_results["models"]["AIC"],
-        BDs_model=synthetic_results["models"]["BDs"],
-        csi_model=synthetic_results["models"]["CSI"],
-        data=synthetic_results["train_data"],
-        evaluate_data=synthetic_results["evaluate_data"],
-        n_kl=N_KL,
-        n_do=N_DO,
-        evaluation_module=ev,
-    )
+    run_and_print_comparison(histories=synthetic_results["histories"])
     fig_synth, _ = plot_pruning_progress(synthetic_results["histories"])
     if fig_synth is not None:
         out_synth = os.path.join(SCRIPT_DIR, "synthetic_progress.png")
@@ -381,19 +364,7 @@ def main():
     print("\n" + "=" * 60)
     print("ALARM — Comparison table")
     print("=" * 60)
-    run_and_print_comparison(
-        true_model=alarm_results["true_model"],
-        wavelet_model=alarm_results["models"]["Wavelet"],
-        BIC_model=alarm_results["models"]["BIC"],
-        AIC_model=alarm_results["models"]["AIC"],
-        BDs_model=alarm_results["models"]["BDs"],
-        csi_model=alarm_results["models"]["CSI"],
-        data=alarm_results["train_data"],
-        evaluate_data=alarm_results["evaluate_data"],
-        n_kl=N_KL,
-        n_do=N_DO,
-        evaluation_module=ev,
-    )
+    run_and_print_comparison(histories=alarm_results["histories"])
     fig_alarm, _ = plot_pruning_progress(alarm_results["histories"])
     if fig_alarm is not None:
         out_alarm = os.path.join(SCRIPT_DIR, "alarm_progress.png")
@@ -410,19 +381,7 @@ def main():
     print("\n" + "=" * 60)
     print("SYNTHETIC — Comparison table")
     print("=" * 60)
-    run_and_print_comparison(
-        true_model=synthetic_results["true_model"],
-        wavelet_model=synthetic_results["models"]["Wavelet"],
-        BIC_model=synthetic_results["models"]["BIC"],
-        AIC_model=synthetic_results["models"]["AIC"],
-        BDs_model=synthetic_results["models"]["BDs"],
-        csi_model=synthetic_results["models"]["CSI"],
-        data=synthetic_results["train_data"],
-        evaluate_data=synthetic_results["evaluate_data"],
-        n_kl=N_KL,
-        n_do=N_DO,
-        evaluation_module=ev,
-    )
+    run_and_print_comparison(histories=synthetic_results["histories"])
     fig_synth, _ = plot_pruning_progress(synthetic_results["histories"])
     if fig_synth is not None:
         out_synth = os.path.join(SCRIPT_DIR, "synthetic_progress.png")
