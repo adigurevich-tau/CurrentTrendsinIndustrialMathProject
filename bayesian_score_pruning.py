@@ -12,10 +12,12 @@ from pgmpy.metrics import structure_score
 from bn_utils import _clamp_cpds, _refit_model, warn_if_bad_cpds
 
 try:
-    from bayesian_evaluation import build_pruning_row_extra
+    from bayesian_evaluation import build_pruning_row_extra, align_state_names_from_true
 except ImportError:
     def build_pruning_row_extra(*args, **kwargs):
         raise ImportError("bayesian_evaluation.build_pruning_row_extra required")
+    def align_state_names_from_true(true_model, learned_model):
+        return learned_model
 
 try:
     from IPython.display import display
@@ -99,6 +101,7 @@ def score_pruning(
         data,
     )
     warn_if_bad_cpds(pruned_model)
+    align_state_names_from_true(true_model, pruned_model)
 
     current_score = structure_score(pruned_model, data, scoring_method=score_fn)
     score_name = score_fn
@@ -124,6 +127,7 @@ def score_pruning(
         previous_score = current_score
         current_score = best["score"]
         pruned_model = best["model"]
+        align_state_names_from_true(true_model, pruned_model)
         print(f"\nSTEP {step}: removed edge {best['edge']}")
         print(f"  train {score_name} = {current_score:.6f} | delta = {current_score - previous_score:+.6f}")
         step_extra = _row_extra(true_model, pruned_model)
