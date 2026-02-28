@@ -43,6 +43,9 @@ from compare_pruning_methods import (
     plot_pruning_progress,
 )
 
+import logging
+logging.getLogger("pgmpy").setLevel(logging.ERROR)
+
 # -----------------------------------------------------------------------------
 # Config and globals
 # -----------------------------------------------------------------------------
