@@ -23,6 +23,14 @@ import warnings
 # Suppress pgmpy INFO/WARNING (e.g. datatype inference, probability sum adjustment)
 logging.getLogger("pgmpy").setLevel(logging.ERROR)
 
+def _display_image_if_notebook(path):
+    """In Jupyter/Colab, display the saved image in the output."""
+    try:
+        from IPython.display import display, Image
+        display(Image(filename=path))
+    except Exception:
+        pass
+
 import numpy as np
 import pandas as pd
 from pgmpy.models import DiscreteBayesianNetwork
@@ -324,6 +332,7 @@ def main_alarm():
         out_alarm = os.path.join(SCRIPT_DIR, "alarm_progress.png")
         fig_alarm.savefig(out_alarm, dpi=150, bbox_inches="tight")
         print("\nSaved:", out_alarm)
+        _display_image_if_notebook(out_alarm)
     print("Done. Figure: alarm_progress.png")
     return alarm_results
 
@@ -348,6 +357,7 @@ def main_synthetic():
         out_synth = os.path.join(SCRIPT_DIR, "synthetic_progress.png")
         fig_synth.savefig(out_synth, dpi=150, bbox_inches="tight")
         print("\nSaved:", out_synth)
+        _display_image_if_notebook(out_synth)
     print("Done. Figure: synthetic_progress.png")
     return synthetic_results
 
@@ -370,6 +380,7 @@ def main():
         out_alarm = os.path.join(SCRIPT_DIR, "alarm_progress.png")
         fig_alarm.savefig(out_alarm, dpi=150, bbox_inches="tight")
         print("\nSaved:", out_alarm)
+        _display_image_if_notebook(out_alarm)
 
     # 2) Synthetic (optional if config missing)
     if not os.path.isfile(CONFIG_PATH):
@@ -387,6 +398,7 @@ def main():
         out_synth = os.path.join(SCRIPT_DIR, "synthetic_progress.png")
         fig_synth.savefig(out_synth, dpi=150, bbox_inches="tight")
         print("\nSaved:", out_synth)
+        _display_image_if_notebook(out_synth)
     print("\nDone. Figures: alarm_progress.png, synthetic_progress.png")
     return alarm_results, synthetic_results
 
