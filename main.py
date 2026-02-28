@@ -104,6 +104,8 @@ def run_alarm():
     ll_fn = ev.evaluate_log_likelihood
     kl_fn = lambda true_m, learned_m: ev.evaluate_kl_divergence(true_m, learned_m, verbose=False)
     struct_fn = ev.evaluate_structural_error
+    target_var = run_config["evaluation"].get("target_var")
+    interventions = run_config["evaluation"].get("interventions") or []
 
     print("\n--- Wavelet pruning ---")
     wavelet_model, wavelet_history = pruning_l2_wavelet(
@@ -115,6 +117,8 @@ def run_alarm():
         evaluate_kl_divergence=kl_fn,
         evaluate_structural_error=struct_fn,
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
+        target_var=target_var,
+        interventions=interventions,
     )
     print("\n--- BIC pruning ---")
     bic_model, bic_history = score_pruning(
@@ -128,6 +132,8 @@ def run_alarm():
         evaluate_kl_divergence=kl_fn,
         evaluate_structural_error=struct_fn,
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
+        target_var=target_var,
+        interventions=interventions,
     )
     print("\n--- AIC pruning ---")
     aic_model, aic_history = score_pruning(
@@ -141,6 +147,8 @@ def run_alarm():
         evaluate_kl_divergence=kl_fn,
         evaluate_structural_error=struct_fn,
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
+        target_var=target_var,
+        interventions=interventions,
     )
     print("\n--- BDs pruning ---")
     bds_model, bds_history = score_pruning(
@@ -154,6 +162,8 @@ def run_alarm():
         evaluate_kl_divergence=kl_fn,
         evaluate_structural_error=struct_fn,
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
+        target_var=target_var,
+        interventions=interventions,
     )
     print("\n--- CSI / structural-error pruning ---")
     csi_model, csi_history = structural_error_pruning(
@@ -165,6 +175,8 @@ def run_alarm():
         evaluate_kl_divergence=kl_fn,
         evaluate_structural_error=struct_fn,
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
+        target_var=target_var,
+        interventions=interventions,
     )
 
     return {
@@ -232,6 +244,8 @@ def run_synthetic():
     ll_fn = ev.evaluate_log_likelihood
     kl_fn = lambda true_m, learned_m: ev.evaluate_kl_divergence(true_m, learned_m, verbose=False)
     struct_fn = ev.evaluate_structural_error
+    target_var = run_config["evaluation"].get("target_var")
+    interventions = run_config["evaluation"].get("interventions") or []
 
     print("\n--- Wavelet pruning ---")
     wavelet_model, wavelet_history = pruning_l2_wavelet(
@@ -243,6 +257,8 @@ def run_synthetic():
         evaluate_kl_divergence=kl_fn,
         evaluate_structural_error=struct_fn,
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
+        target_var=target_var,
+        interventions=interventions,
     )
     print("\n--- BIC pruning ---")
     bic_model, bic_history = score_pruning(
@@ -256,6 +272,8 @@ def run_synthetic():
         evaluate_kl_divergence=kl_fn,
         evaluate_structural_error=struct_fn,
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
+        target_var=target_var,
+        interventions=interventions,
     )
     print("\n--- AIC pruning ---")
     aic_model, aic_history = score_pruning(
@@ -269,6 +287,8 @@ def run_synthetic():
         evaluate_kl_divergence=kl_fn,
         evaluate_structural_error=struct_fn,
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
+        target_var=target_var,
+        interventions=interventions,
     )
     print("\n--- BDs pruning ---")
     bds_model, bds_history = score_pruning(
@@ -282,6 +302,8 @@ def run_synthetic():
         evaluate_kl_divergence=kl_fn,
         evaluate_structural_error=struct_fn,
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
+        target_var=target_var,
+        interventions=interventions,
     )
     print("\n--- CSI / structural-error pruning ---")
     csi_model, csi_history = structural_error_pruning(
@@ -293,6 +315,8 @@ def run_synthetic():
         evaluate_kl_divergence=kl_fn,
         evaluate_structural_error=struct_fn,
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
+        target_var=target_var,
+        interventions=interventions,
     )
 
     return {
