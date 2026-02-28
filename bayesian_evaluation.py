@@ -380,15 +380,13 @@ def evaluate_collider_preservation(
     true_model: DiscreteBayesianNetwork,
     learned_model: DiscreteBayesianNetwork,
 ) -> dict:
-    """Collider preservation. Returns n_true_colliders, n_learned_colliders, precision, recall, f1."""
+    """Collider preservation. Returns n_true_colliders, n_learned_colliders, recall, f1."""
     true_c = set(list_colliders(true_model))
     learned_c = set(list_colliders(learned_model))
     n_true, n_learned = len(true_c), len(learned_c)
     tp = len(true_c & learned_c)
-    precision = tp / n_learned if n_learned else 0.0
     recall = tp / n_true if n_true else 0.0
-    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-    return {"n_true_colliders": n_true, "n_learned_colliders": n_learned, "precision": precision, "recall": recall, "f1": f1}
+    return {"n_true_colliders": n_true, "n_learned_colliders": n_learned, "recall": recall}
 
 
 def build_pruning_row_extra(
@@ -422,14 +420,12 @@ def build_pruning_row_extra(
     if collider_fn:
         coll = collider_fn(true_m, learned_m)
         row["collider_recall"] = coll["recall"]
-        row["collider_precision"] = coll["precision"]
     else:
         row["collider_recall"] = None
-        row["collider_precision"] = None
     if interventions and do_kl_fn:
         kls = []
         for do_dict in interventions:
-            kl = do_kl_fn(true_m, learned_m, do_dict, n_samples=300, verbose=False)
+            kl = do_kl_fn(true_m, learned_m, do_dict, verbose=False)
             if kl is not None and not (isinstance(kl, float) and np.isnan(kl)):
                 kls.append(kl)
         row["interventional_kl_mean"] = float(np.mean(kls)) if kls else None
