@@ -72,7 +72,7 @@ def run_comparison_table(
     """
     Build a single DataFrame with one row per pruning method and columns:
     - Predictive: neg_ll (generalization), kl_div (to true), pred_accuracy (target)
-    - Causal: structural_error, collider_recall, collider_precision, interventional_kl_mean
+    - Causal: structural_error, collider_recall, interventional_kl_mean
     If evaluation_module is None, tries to import bayesian_evaluation; pass it in a notebook if import fails.
     """
     ev = _get_evaluation_module(evaluation_module)
@@ -93,7 +93,6 @@ def run_comparison_table(
             r["pred_accuracy"] = np.nan
         coll = ev.evaluate_collider_preservation(true_model, learned)
         r["collider_recall"] = coll["recall"]
-        r["collider_precision"] = coll["precision"]
         if hasattr(ev, "evaluate_global_ace_difference"):
             try:
                 r["global_ace_diff"] = ev.evaluate_global_ace_difference(true_model, learned)
@@ -124,7 +123,7 @@ def print_comparison(
     df: pd.DataFrame,
     method_col: str = "method",
     predictive_cols: tuple = ("neg_ll", "kl_div", "pred_accuracy"),
-    causal_cols: tuple = ("structural_error", "collider_recall", "collider_precision", "interventional_kl_mean", "global_ace_diff"),
+    causal_cols: tuple = ("structural_error", "collider_recall", "interventional_kl_mean", "global_ace_diff"),
     lower_better: tuple = ("neg_ll", "kl_div", "structural_error", "interventional_kl_mean"),
     round_digits: int = 4,
     mark_best: bool = True,
@@ -235,7 +234,6 @@ PROGRESS_METRICS = (
     ("pred_accuracy", "Prediction accuracy", "higher"),
     ("global_ace_diff", "Global ACE difference", "lower"),
     ("collider_recall", "Collider recall", "higher"),
-    ("collider_precision", "Collider precision", "higher"),
     ("interventional_kl_mean", "Interventional KL (mean)", "lower"),
 )
 
@@ -256,7 +254,7 @@ def histories_to_dataframe(histories_dict):
                 continue
             row["step"] = step
             for key in ("num_edges", "ll_score", "kl_score", "structure_score",
-                       "pred_accuracy", "collider_recall", "collider_precision",
+                       "pred_accuracy", "collider_recall",
                        "global_ace_diff", "interventional_kl_mean", "score"):
                 if key in rec:
                     val = rec[key]
