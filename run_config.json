@@ -1,0 +1,21 @@
+{
+  "comment": "Run configuration for ALARM and synthetic pruning experiments. Edit this file to tune runs.",
+  "pruning": {
+    "max_steps": 10,
+    "min_steps": 5
+  },
+  "evaluation": {
+    "n_kl": 500,
+    "n_do": 300
+  },
+  "alarm": {
+    "n_data": 4200,
+    "n_train": 900,
+    "n_eval": 900
+  },
+  "synthetic": {
+    "sample_size": 4000,
+    "train_ratio": 0.7,
+    "random_state": 42
+  }
+}
