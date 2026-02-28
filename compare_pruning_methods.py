@@ -72,7 +72,7 @@ def run_comparison_table(
     """
     Build a single DataFrame with one row per pruning method and columns:
     - Predictive: neg_ll (generalization), kl_div (to true), pred_accuracy (target)
-    - Causal: structural_error, collider_recall, interventional_kl_mean
+    - Causal: structural_error, collider_recall, collider_precision, interventional_kl_mean
     If evaluation_module is None, tries to import bayesian_evaluation; pass it in a notebook if import fails.
     """
     ev = _get_evaluation_module(evaluation_module)
@@ -93,6 +93,7 @@ def run_comparison_table(
             r["pred_accuracy"] = np.nan
         coll = ev.evaluate_collider_preservation(true_model, learned)
         r["collider_recall"] = coll["recall"]
+        r["collider_precision"] = coll["precision"]
         if hasattr(ev, "evaluate_global_ace_difference"):
             try:
                 r["global_ace_diff"] = ev.evaluate_global_ace_difference(true_model, learned)
@@ -116,6 +117,47 @@ def run_comparison_table(
     return pd.DataFrame(rows)
 
 
+def comparison_table_from_histories(histories_dict, method_order=None):
+    """
+    Build the comparison DataFrame from the last step of each method's history.
+    Avoids re-running evaluation (LL, KL, structural error, etc.); uses the values
+    already computed at the final pruning step.
+    """
+    method_order = method_order or DEFAULT_METHOD_ORDER
+    # Column mapping: history key -> comparison table column name
+    key_map = {
+        "ll_score": "neg_ll",
+        "kl_score": "kl_div",
+        "structure_score": "structural_error",
+        "pred_accuracy": "pred_accuracy",
+        "collider_recall": "collider_recall",
+        "collider_precision": "collider_precision",
+        "global_ace_diff": "global_ace_diff",
+        "interventional_kl_mean": "interventional_kl_mean",
+    }
+    rows = []
+    for name in method_order:
+        if name not in histories_dict:
+            continue
+        history = histories_dict[name]
+        if not history:
+            continue
+        last = history[-1]
+        r = {"method": name}
+        for hkey, ckey in key_map.items():
+            if hkey in last:
+                val = last[hkey]
+                if val is None and ckey in ("pred_accuracy", "collider_recall", "collider_precision", "global_ace_diff", "interventional_kl_mean"):
+                    val = np.nan
+                r[ckey] = val
+            else:
+                r[ckey] = np.nan
+        rows.append(r)
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows)
+
+
 DEFAULT_METHOD_ORDER = ("Wavelet", "BIC", "AIC", "BDs", "CSI")
 
 
@@ -123,8 +165,8 @@ def print_comparison(
     df: pd.DataFrame,
     method_col: str = "method",
     predictive_cols: tuple = ("neg_ll", "kl_div", "pred_accuracy"),
-    causal_cols: tuple = ("structural_error", "collider_recall", "interventional_kl_mean", "global_ace_diff"),
-    lower_better: tuple = ("neg_ll", "kl_div", "structural_error", "interventional_kl_mean"),
+    causal_cols: tuple = ("structural_error", "collider_recall", "collider_precision", "interventional_kl_mean", "global_ace_diff"),
+    lower_better: tuple = ("neg_ll", "kl_div", "structural_error", "interventional_kl_mean", "global_ace_diff"),
     round_digits: int = 4,
     mark_best: bool = True,
 ) -> None:
@@ -167,7 +209,7 @@ def print_comparison(
 
 
 def run_and_print_comparison(
-    true_model: DiscreteBayesianNetwork,
+    true_model: DiscreteBayesianNetwork = None,
     wavelet_model: DiscreteBayesianNetwork = None,
     BIC_model: DiscreteBayesianNetwork = None,
     AIC_model: DiscreteBayesianNetwork = None,
@@ -181,14 +223,19 @@ def run_and_print_comparison(
     n_do: int = 300,
     method_order: tuple = None,
     evaluation_module=None,
+    histories: dict = None,
 ) -> pd.DataFrame:
     """
-    Build models dict from the five pruned models, run comparison, and print results.
-    Pass only the models you have; None entries are skipped.
-    If import of bayesian_evaluation fails in a notebook, add its folder to sys.path,
-    then: import bayesian_evaluation; run_and_print_comparison(..., evaluation_module=bayesian_evaluation)
+    Print comparison table. If histories is provided, uses the last step of each
+    method's history (no re-evaluation). Otherwise builds models dict from the
+    five pruned models and runs run_comparison_table.
     """
     method_order = method_order or DEFAULT_METHOD_ORDER
+    if histories is not None:
+        df = comparison_table_from_histories(histories, method_order=method_order)
+        if df is not None and len(df) > 0:
+            print_comparison(df)
+        return df
     models = {}
     if wavelet_model is not None:
         models["Wavelet"] = wavelet_model
@@ -234,6 +281,7 @@ PROGRESS_METRICS = (
     ("pred_accuracy", "Prediction accuracy", "higher"),
     ("global_ace_diff", "Global ACE difference", "lower"),
     ("collider_recall", "Collider recall", "higher"),
+    ("collider_precision", "Collider precision", "higher"),
     ("interventional_kl_mean", "Interventional KL (mean)", "lower"),
 )
 
@@ -254,7 +302,7 @@ def histories_to_dataframe(histories_dict):
                 continue
             row["step"] = step
             for key in ("num_edges", "ll_score", "kl_score", "structure_score",
-                       "pred_accuracy", "collider_recall",
+                       "pred_accuracy", "collider_recall", "collider_precision",
                        "global_ace_diff", "interventional_kl_mean", "score"):
                 if key in rec:
                     val = rec[key]
@@ -366,53 +414,3 @@ def plot_pruning_progress(
 
     plt.tight_layout()
     return fig, axes
-
-
-# ---------------------------------------------------------------------------
-# Discussion guide for your report (when/why methods outperform)
-# ---------------------------------------------------------------------------
-DISCUSSION_GUIDE = """
-Predictive quality
-------------------
-• Generalization error / likelihood: Use neg_ll on held-out data (lower is better) and
-  kl_div (KL(true||learned), lower is better). Score-based (BIC) often favors simpler
-  models that generalize when the true structure is sparse. Wavelet pruning removes
-  edges by “detail” strength, which can preserve predictive power if weak edges are
-  truly irrelevant. CSI pruning removes edges that are contextually irrelevant, which
-  can help when many dependencies are context-specific.
-• Target prediction accuracy: Use pred_accuracy for a chosen target variable. Methods
-  that keep edges into the target (or its Markov blanket) will do better.
-
-When each might outperform
----------------------------
-• Wavelet: Good when the true model has clear “strong” vs “weak” edges and weak edges
-  add noise. Can outperform score-based if BIC oversimplifies (e.g. small samples).
-• Score-based (BIC/AIC): Good for generalization and when you care about parsimony.
-  BIC tends to underfit, AIC to overfit; compare both. Usually strong when data is
-  sufficient and the true DAG is sparse.
-• CSI: Good when many dependencies are context-specific (CSI holds in many contexts).
-  Can preserve predictive performance while simplifying structure.
-
-Causal quality
---------------
-• Stability of interventional distributions: Use interventional_kl_mean over a set of
-  do(.) interventions. Lower KL means the learned model’s interventional distribution
-  is closer to the true one. Methods that preserve the correct structure around
-  intervened variables will have lower interventional KL.
-• Preservation of causal effects: Use causal_effect_ace(true_model, X, Y, x_low, x_high)
-  for both true and learned models; compare ACE. If the learned graph is wrong (e.g.
-  missing confounders or reversing cause/effect), ACE can be biased.
-• Colliders: Use collider_recall and collider_precision. Correct handling of colliders
-  matters for conditioning (e.g. selection bias). Pruning that removes one parent from
-  a collider changes the structure and can hurt causal quality.
-
-Summary table for report
-------------------------
-Run run_comparison_table(...) and report:
-- Predictive: neg_ll, kl_div, pred_accuracy (and say which is “generalization” vs
-  “accuracy”).
-- Causal: structural_error, collider_recall, collider_precision, interventional_kl_mean.
-Then discuss: which method minimizes structural_error? Which preserves colliders best?
-Which has lowest interventional KL? Tie back to “when/why” (sparsity, sample size,
-context-specificity, interventions of interest).
-"""
