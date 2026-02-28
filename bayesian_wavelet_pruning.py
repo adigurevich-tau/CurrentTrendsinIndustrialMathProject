@@ -257,8 +257,6 @@ def pruning_l2_wavelet(true_model, pruned_model, evaluate_data, data, max_steps=
         warn_if_bad_cpds(pruned_model)
 
         remaining_norms = compute_all_wavelet_norms(pruned_model, data)
-        if remaining_norms:
-            print(sorted(remaining_norms, key=lambda x: x[1])[:10])
         mean_wavelet_l2 = np.mean([v for _, v in remaining_norms]) if remaining_norms else 0.0
 
         step_extra = _row_extra(true_model, pruned_model)
