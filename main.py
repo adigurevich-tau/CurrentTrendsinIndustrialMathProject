@@ -19,6 +19,7 @@ import sys
 import json
 import logging
 import warnings
+from functools import partial
 
 # Suppress pgmpy INFO/WARNING (e.g. datatype inference, probability sum adjustment)
 logging.getLogger("pgmpy").setLevel(logging.ERROR)
@@ -106,6 +107,10 @@ def run_alarm():
     struct_fn = ev.evaluate_structural_error
     target_var = run_config["evaluation"].get("target_var")
     interventions = run_config["evaluation"].get("interventions") or []
+    n_do = run_config["evaluation"].get("n_do", 300)
+    pred_fn = ev.evaluate_target_prediction_accuracy
+    collider_fn = ev.evaluate_collider_preservation
+    do_kl_fn = partial(ev.evaluate_interventional_kl, n_samples=n_do) if interventions else None
 
     print("\n--- Wavelet pruning ---")
     wavelet_model, wavelet_history = pruning_l2_wavelet(
@@ -119,6 +124,9 @@ def run_alarm():
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
         target_var=target_var,
         interventions=interventions,
+        evaluate_target_prediction_accuracy=pred_fn,
+        evaluate_collider_preservation=collider_fn,
+        evaluate_interventional_kl=do_kl_fn,
     )
     print("\n--- BIC pruning ---")
     bic_model, bic_history = score_pruning(
@@ -134,6 +142,9 @@ def run_alarm():
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
         target_var=target_var,
         interventions=interventions,
+        evaluate_target_prediction_accuracy=pred_fn,
+        evaluate_collider_preservation=collider_fn,
+        evaluate_interventional_kl=do_kl_fn,
     )
     print("\n--- AIC pruning ---")
     aic_model, aic_history = score_pruning(
@@ -149,6 +160,9 @@ def run_alarm():
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
         target_var=target_var,
         interventions=interventions,
+        evaluate_target_prediction_accuracy=pred_fn,
+        evaluate_collider_preservation=collider_fn,
+        evaluate_interventional_kl=do_kl_fn,
     )
     print("\n--- BDs pruning ---")
     bds_model, bds_history = score_pruning(
@@ -164,6 +178,9 @@ def run_alarm():
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
         target_var=target_var,
         interventions=interventions,
+        evaluate_target_prediction_accuracy=pred_fn,
+        evaluate_collider_preservation=collider_fn,
+        evaluate_interventional_kl=do_kl_fn,
     )
     print("\n--- CSI / structural-error pruning ---")
     csi_model, csi_history = structural_error_pruning(
@@ -177,6 +194,9 @@ def run_alarm():
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
         target_var=target_var,
         interventions=interventions,
+        evaluate_target_prediction_accuracy=pred_fn,
+        evaluate_collider_preservation=collider_fn,
+        evaluate_interventional_kl=do_kl_fn,
     )
 
     return {
@@ -246,6 +266,10 @@ def run_synthetic():
     struct_fn = ev.evaluate_structural_error
     target_var = run_config["evaluation"].get("target_var")
     interventions = run_config["evaluation"].get("interventions") or []
+    n_do = run_config["evaluation"].get("n_do", 300)
+    pred_fn = ev.evaluate_target_prediction_accuracy
+    collider_fn = ev.evaluate_collider_preservation
+    do_kl_fn = partial(ev.evaluate_interventional_kl, n_samples=n_do) if interventions else None
 
     print("\n--- Wavelet pruning ---")
     wavelet_model, wavelet_history = pruning_l2_wavelet(
@@ -259,6 +283,9 @@ def run_synthetic():
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
         target_var=target_var,
         interventions=interventions,
+        evaluate_target_prediction_accuracy=pred_fn,
+        evaluate_collider_preservation=collider_fn,
+        evaluate_interventional_kl=do_kl_fn,
     )
     print("\n--- BIC pruning ---")
     bic_model, bic_history = score_pruning(
@@ -274,6 +301,9 @@ def run_synthetic():
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
         target_var=target_var,
         interventions=interventions,
+        evaluate_target_prediction_accuracy=pred_fn,
+        evaluate_collider_preservation=collider_fn,
+        evaluate_interventional_kl=do_kl_fn,
     )
     print("\n--- AIC pruning ---")
     aic_model, aic_history = score_pruning(
@@ -289,6 +319,9 @@ def run_synthetic():
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
         target_var=target_var,
         interventions=interventions,
+        evaluate_target_prediction_accuracy=pred_fn,
+        evaluate_collider_preservation=collider_fn,
+        evaluate_interventional_kl=do_kl_fn,
     )
     print("\n--- BDs pruning ---")
     bds_model, bds_history = score_pruning(
@@ -304,6 +337,9 @@ def run_synthetic():
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
         target_var=target_var,
         interventions=interventions,
+        evaluate_target_prediction_accuracy=pred_fn,
+        evaluate_collider_preservation=collider_fn,
+        evaluate_interventional_kl=do_kl_fn,
     )
     print("\n--- CSI / structural-error pruning ---")
     csi_model, csi_history = structural_error_pruning(
@@ -317,6 +353,9 @@ def run_synthetic():
         evaluate_global_ace_difference=ev.evaluate_global_ace_difference,
         target_var=target_var,
         interventions=interventions,
+        evaluate_target_prediction_accuracy=pred_fn,
+        evaluate_collider_preservation=collider_fn,
+        evaluate_interventional_kl=do_kl_fn,
     )
 
     return {
