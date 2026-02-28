@@ -297,7 +297,7 @@ def run_synthetic():
     }
 
 
-def main():
+def main_alarm():
     warnings.filterwarnings("ignore", category=UserWarning, module="pgmpy")
     print("Current Trends in Industrial Math — Pruning comparison (ALARM + Synthetic)")
     print("Working directory:", os.getcwd())
@@ -326,13 +326,10 @@ def main():
         out_alarm = os.path.join(SCRIPT_DIR, "alarm_progress.png")
         fig_alarm.savefig(out_alarm, dpi=150, bbox_inches="tight")
         print("\nSaved:", out_alarm)
+    print("Done. Figure: alarm_progress.png")
+    return alarm_results
 
-    # 2) Synthetic (optional if config missing)
-    if not os.path.isfile(CONFIG_PATH):
-        print("\nSkipping synthetic experiment (bayesian_config.json not found).")
-        print("Done. Figure: alarm_progress.png")
-        return alarm_results, None
-
+def main_synthetic():
     synthetic_results = run_synthetic()
     print("\n" + "=" * 60)
     print("SYNTHETIC — Comparison table")
@@ -356,8 +353,11 @@ def main():
         fig_synth.savefig(out_synth, dpi=150, bbox_inches="tight")
         print("\nSaved:", out_synth)
     print("\nDone. Figures: alarm_progress.png, synthetic_progress.png")
-    return alarm_results, synthetic_results
+    return synthetic_results
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main_alarm__":
+    main_alarm()
+
+if __name__ == "__main_synthetic__"
+    main_synthetic()
