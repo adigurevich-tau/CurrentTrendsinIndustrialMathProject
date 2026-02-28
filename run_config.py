@@ -14,7 +14,12 @@ CONFIG_PATH = os.path.join(SCRIPT_DIR, "run_config.json")
 
 _DEFAULTS = {
     "pruning": {"max_steps": 10, "min_steps": 5},
-    "evaluation": {"n_kl": 500, "n_do": 300},
+    "evaluation": {
+        "n_kl": 500,
+        "n_do": 300,
+        "target_var": None,
+        "interventions": [],
+    },
     "alarm": {"n_data": 4200, "n_train": 900, "n_eval": 900},
     "synthetic": {"sample_size": 4000, "train_ratio": 0.7, "random_state": 42},
 }
