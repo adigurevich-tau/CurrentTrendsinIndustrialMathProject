@@ -11,10 +11,12 @@ from pgmpy.factors.discrete import TabularCPD
 from bn_utils import _refit_model, warn_if_bad_cpds
 
 try:
-    from bayesian_evaluation import build_pruning_row_extra
+    from bayesian_evaluation import build_pruning_row_extra, align_state_names_from_true
 except ImportError:
     def build_pruning_row_extra(*args, **kwargs):
         raise ImportError("bayesian_evaluation.build_pruning_row_extra required")
+    def align_state_names_from_true(true_model, learned_model):
+        return learned_model
 
 
 def _cpd_shape(cpd: TabularCPD, state_names_override: dict = None):
@@ -243,7 +245,7 @@ def structural_error_pruning(
 ):
     """
     Iteratively prune the edge with lowest average KL (most CSI-irrelevant).
-    Uses _refit_model (fit + clamp) from bayesian_wavelet_pruning_fixed.
+    Uses _refit_model (fit + clamp) from bn_utils.
     Optional args can be omitted and read from global scope in a notebook.
     """
     g = globals()
@@ -279,6 +281,8 @@ def structural_error_pruning(
         list(model.nodes()),
         data,
     )
+    warn_if_bad_cpds(current_model)
+    align_state_names_from_true(true_model, current_model)
 
     # State names from model for correct CPD shape (avoids reshape errors after fit)
     state_names = getattr(current_model, "state_names", None)
@@ -333,6 +337,7 @@ def structural_error_pruning(
 
         current_model = _refit_model(new_edges, nodes, data)
         warn_if_bad_cpds(current_model)
+        align_state_names_from_true(true_model, current_model)
 
         step_extra = _row_extra(true_model, current_model)
         history.append({
