@@ -6,10 +6,10 @@ Uses bn_utils for refit, passes evaluate_global_ace_difference to all pruning me
 
 Usage (from project root):
   pip install -r requirements.txt
-  python main.py              # Run ALARM only
-  python main.py all          # Run ALARM + synthetic (if bayesian_config.json exists)
-
-Requires: bayesian_config.json in the same directory only for synthetic. If missing, synthetic is skipped.
+  python main.py              # ALARM only
+  python main.py alarm        # ALARM only
+  python main.py synthetic    # Synthetic only (requires bayesian_config.json)
+  python main.py all           # ALARM + synthetic
 """
 
 from __future__ import print_function
@@ -298,7 +298,76 @@ def run_synthetic():
     }
 
 
+def main_alarm():
+    """Run ALARM experiment only: pruning, comparison table, save alarm_progress.png."""
+    warnings.filterwarnings("ignore", category=UserWarning, module="pgmpy")
+    print("Current Trends in Industrial Math — Pruning comparison (ALARM only)")
+    print("Working directory:", os.getcwd())
+    print("Project root:", SCRIPT_DIR)
+    alarm_results = run_alarm()
+    print("\n" + "=" * 60)
+    print("ALARM — Comparison table")
+    print("=" * 60)
+    run_and_print_comparison(
+        true_model=alarm_results["true_model"],
+        wavelet_model=alarm_results["models"]["Wavelet"],
+        BIC_model=alarm_results["models"]["BIC"],
+        AIC_model=alarm_results["models"]["AIC"],
+        BDs_model=alarm_results["models"]["BDs"],
+        csi_model=alarm_results["models"]["CSI"],
+        data=alarm_results["train_data"],
+        evaluate_data=alarm_results["evaluate_data"],
+        n_kl=N_KL,
+        n_do=N_DO,
+        evaluation_module=ev,
+    )
+    fig_alarm, _ = plot_pruning_progress(alarm_results["histories"])
+    if fig_alarm is not None:
+        out_alarm = os.path.join(SCRIPT_DIR, "alarm_progress.png")
+        fig_alarm.savefig(out_alarm, dpi=150, bbox_inches="tight")
+        print("\nSaved:", out_alarm)
+    print("Done. Figure: alarm_progress.png")
+    return alarm_results
+
+
+def main_synthetic():
+    """Run synthetic experiment only: pruning, comparison table, save synthetic_progress.png. Requires bayesian_config.json."""
+    if not os.path.isfile(CONFIG_PATH):
+        print("Synthetic experiment requires bayesian_config.json in the project directory.")
+        print("Not found:", CONFIG_PATH)
+        sys.exit(1)
+    warnings.filterwarnings("ignore", category=UserWarning, module="pgmpy")
+    print("Current Trends in Industrial Math — Pruning comparison (Synthetic only)")
+    print("Working directory:", os.getcwd())
+    print("Project root:", SCRIPT_DIR)
+    synthetic_results = run_synthetic()
+    print("\n" + "=" * 60)
+    print("SYNTHETIC — Comparison table")
+    print("=" * 60)
+    run_and_print_comparison(
+        true_model=synthetic_results["true_model"],
+        wavelet_model=synthetic_results["models"]["Wavelet"],
+        BIC_model=synthetic_results["models"]["BIC"],
+        AIC_model=synthetic_results["models"]["AIC"],
+        BDs_model=synthetic_results["models"]["BDs"],
+        csi_model=synthetic_results["models"]["CSI"],
+        data=synthetic_results["train_data"],
+        evaluate_data=synthetic_results["evaluate_data"],
+        n_kl=N_KL,
+        n_do=N_DO,
+        evaluation_module=ev,
+    )
+    fig_synth, _ = plot_pruning_progress(synthetic_results["histories"])
+    if fig_synth is not None:
+        out_synth = os.path.join(SCRIPT_DIR, "synthetic_progress.png")
+        fig_synth.savefig(out_synth, dpi=150, bbox_inches="tight")
+        print("\nSaved:", out_synth)
+    print("Done. Figure: synthetic_progress.png")
+    return synthetic_results
+
+
 def main():
+    """Run ALARM then synthetic (synthetic skipped if bayesian_config.json missing)."""
     warnings.filterwarnings("ignore", category=UserWarning, module="pgmpy")
     print("Current Trends in Industrial Math — Pruning comparison (ALARM + Synthetic)")
     print("Working directory:", os.getcwd())
@@ -361,37 +430,10 @@ def main():
 
 
 if __name__ == "__main__":
-    run_both = len(sys.argv) > 1 and sys.argv[1].lower() in ("all", "--all", "synthetic")
-    if run_both:
-        main()  # ALARM + synthetic (synthetic skipped if bayesian_config.json missing)
+    arg = sys.argv[1].lower() if len(sys.argv) > 1 else "alarm"
+    if arg in ("all", "--all"):
+        main()  # ALARM + synthetic (synthetic skipped if no config)
+    elif arg in ("synthetic", "synth"):
+        main_synthetic()  # synthetic only
     else:
-        # ALARM only
-        warnings.filterwarnings("ignore", category=UserWarning, module="pgmpy")
-        print("Current Trends in Industrial Math — Pruning comparison (ALARM only)")
-        print("Working directory:", os.getcwd())
-        print("Project root:", SCRIPT_DIR)
-        alarm_results = run_alarm()
-        print("\n" + "=" * 60)
-        print("ALARM — Comparison table")
-        print("=" * 60)
-        run_and_print_comparison(
-            true_model=alarm_results["true_model"],
-            wavelet_model=alarm_results["models"]["Wavelet"],
-            BIC_model=alarm_results["models"]["BIC"],
-            AIC_model=alarm_results["models"]["AIC"],
-            BDs_model=alarm_results["models"]["BDs"],
-            csi_model=alarm_results["models"]["CSI"],
-            data=alarm_results["train_data"],
-            evaluate_data=alarm_results["evaluate_data"],
-            n_kl=N_KL,
-            n_do=N_DO,
-            evaluation_module=ev,
-        )
-        fig_alarm, _ = plot_pruning_progress(alarm_results["histories"])
-        if fig_alarm is not None:
-            out_alarm = os.path.join(SCRIPT_DIR, "alarm_progress.png")
-            fig_alarm.savefig(out_alarm, dpi=150, bbox_inches="tight")
-            print("\nSaved:", out_alarm)
-        if not run_both and os.path.isfile(CONFIG_PATH):
-            print("\nTip: run 'python main.py all' to also run the synthetic experiment.")
-        print("Done. Figure: alarm_progress.png")
+        main_alarm()  # alarm only (default for no args or "alarm")
