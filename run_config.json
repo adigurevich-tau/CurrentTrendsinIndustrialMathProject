@@ -6,7 +6,9 @@
   },
   "evaluation": {
     "n_kl": 500,
-    "n_do": 300
+    "n_do": 300,
+    "target_var": "CATECHOL",
+    "interventions": [{"HR": 0}, {"CO": 1}]
   },
   "alarm": {
     "n_data": 4200,
