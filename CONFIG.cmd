@@ -27,6 +27,8 @@ If you run from Colab or another environment, upload or create **`run_config.jso
 |-----|--------|-------------|
 | `evaluation.n_kl` | 500 | Number of samples for KL divergence estimate (true vs learned). |
 | `evaluation.n_do` | 300 | Number of samples per intervention for interventional KL (when interventions are used). |
+| `evaluation.target_var` | `null` | Target variable name for prediction accuracy (e.g. `"CATECHOL"` for ALARM). Set to `null` or omit to disable. Must be a node in the BN. |
+| `evaluation.interventions` | `[]` | List of intervention dicts for interventional KL, e.g. `[{"HR": 0}, {"CO": 1}]`. Use integer state indices. Empty list `[]` disables. |
 
 ### ALARM experiment
 
@@ -54,6 +56,10 @@ If you run from Colab or another environment, upload or create **`run_config.jso
     "max_steps": 5,
     "min_steps": 2
   },
+  "evaluation": {
+    "target_var": "CATECHOL",
+    "interventions": [{"HR": 0}, {"CO": 1}]
+  },
   "alarm": {
     "n_data": 2000,
     "n_train": 500,
@@ -61,6 +67,8 @@ If you run from Colab or another environment, upload or create **`run_config.jso
   }
 }
 ```
+
+To disable target prediction and interventional KL, set `"target_var": null` and `"interventions": []`.
 
 Only include keys you want to override; the rest fall back to defaults.
 
